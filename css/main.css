@@ -1,0 +1,38 @@
+body {
+
+  background: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 25px;
+  color: #0009;
+  line-height: 50px;
+  text-align: center;
+}
+
+#wrap {
+
+  width: 768px;
+  margin: auto;
+}
+
+h1 {
+
+  font-size: 50px;
+  margin: 25px 0 25px 0;
+  font-weight: normal;
+}
+
+canvas {
+
+  margin-top: 25px;
+  display: none;
+}
+
+a {
+
+  color: #00f9;
+}
+
+#fullscreen {
+
+  display: none;
+}

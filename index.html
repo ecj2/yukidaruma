@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Yukidaruma</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="icon" href="data/png/favorite.png">
+    <script src="js/vendor/poyo.js"></script>
+    <script src="js/global.js"></script>
+    <script src="js/snowball.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/platform.js"></script>
+    <script src="js/heart.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+      function start() {
+
+        // Show canvas.
+        document.getElementById("poyo").style = "display: inherit";
+
+        // Hide toggle link.
+        document.getElementById("toggle").style = "display: none";
+
+        // Show fullscreen link.
+        document.getElementById("fullscreen").style = "display: inherit";
+
+        // Show controls.
+        document.getElementById("controls").style = "display: inherit";
+
+        // Start the game.
+        main();
+      }
+    </script>
+  </head>
+  <body>
+    <div id="wrap">
+      <h1>Yukidaruma</h1>
+      <span id="controls" style="display: none">Controls: move with the arrow keys and toss snowballs with Z.</span>
+      <div id="toggle">
+        <a href="#" onclick="start()">Load Game</a>
+      </div>
+      <canvas id="poyo">
+        Your browser is too old to play this game!
+      </canvas>
+      <a id="fullscreen" href="javascript:document.getElementById('poyo').requestFullscreen()">Fullscreen</a>
+    </div>
+  </body>
+</html>
