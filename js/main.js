@@ -266,8 +266,6 @@ function updateHearts() {
 
     for (i; i < number_to_spawn; ++i) {
 
-      console.log(i);
-
       heart_ticks = 30 - (Math.min(70, goals_met * 10) * 0.25);
 
       // Pick a random platform spot to spawn the heart above.
