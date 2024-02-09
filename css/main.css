@@ -1,38 +1,40 @@
 body {
 
-  background: #fff;
-  font-family: Arial, sans-serif;
-  font-size: 25px;
-  color: #0009;
-  line-height: 50px;
-  text-align: center;
+  background: #121212;
+  font-family: "Droid Sans", sans-serif;
+  font-size: 27px;
+  color: #a0a0a0;
+  line-height: 52.5px;
+  margin: 0;
+  text-align: left;
 }
 
 #wrap {
 
-  width: 768px;
+  width: 800px;
   margin: auto;
 }
 
 h1 {
 
-  font-size: 50px;
-  margin: 25px 0 25px 0;
-  font-weight: normal;
+  font-size: 57px;
+  margin: 52.5px 0 52.5px 0;
+  color: #e9e9e9;
 }
 
 canvas {
 
-  margin-top: 25px;
   display: none;
+  margin: 2em 0 0 0;
 }
 
 a {
 
-  color: #00f9;
+  color: #b4bbff;
+  text-decoration: none;
 }
 
-#fullscreen {
+a:hover {
 
-  display: none;
+  text-decoration: underline;
 }

@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>Yukidaruma</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Droid+Sans&display=swap">
     <link rel="stylesheet" href="css/main.css">
     <link rel="icon" href="data/png/favorite.png">
     <script src="js/vendor/poyo.js"></script>
@@ -21,11 +22,8 @@
         // Hide toggle link.
         document.getElementById("toggle").style = "display: none";
 
-        // Show fullscreen link.
-        document.getElementById("fullscreen").style = "display: inherit";
-
-        // Show controls.
-        document.getElementById("controls").style = "display: inherit";
+        // Show fullscreen and source links.
+        document.getElementById("grid").style = "display: flex; width: 768px;";
 
         // Start the game.
         main();
@@ -35,14 +33,21 @@
   <body>
     <div id="wrap">
       <h1>Yukidaruma</h1>
-      <span id="controls" style="display: none">Controls: move with the arrow keys and toss snowballs with Z.</span>
+      A Bird & Beans clone created for <a href="https://tins.amarillion.org/krampu20/rules/">KrampusHack 2020</a>.
       <div id="toggle">
-        <a href="#" onclick="start()">Load Game</a>
+        Click <a href="#" onclick="start()">here</a> to load the game.
       </div>
       <canvas id="poyo">
         Your browser is too old to play this game!
       </canvas>
-      <a id="fullscreen" href="javascript:document.getElementById('poyo').requestFullscreen()">Fullscreen</a>
+      <div id="grid" style="display: none">
+        <div style="flex: 1">
+          <a href="javascript:document.getElementById('poyo').requestFullscreen()">Fullscreen</a>
+        </div>
+        <div style="flex: 2; text-align: right">
+          <a href="https://github.com/ecj2/yukidaruma">Source</a>
+        </div>
+      </div>
     </div>
   </body>
 </html>
