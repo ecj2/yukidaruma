@@ -1,3 +1,5 @@
+"use strict";
+
 async function main() {
 
   if (!Poyo.initialize(CANVAS_W, CANVAS_H)) {

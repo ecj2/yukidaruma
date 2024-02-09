@@ -1,3 +1,5 @@
+"use strict";
+
 Snowball = new class {
 
   constructor() {

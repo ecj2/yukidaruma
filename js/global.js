@@ -1,8 +1,10 @@
+"use strict";
+
 // Bitmaps.
 let bitmap_text;
 let bitmap_atlas;
 let bitmap_light;
-let bitmaps_score;
+let bitmap_score;
 let bitmap_background;
 
 // Samples.

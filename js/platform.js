@@ -1,3 +1,5 @@
+"use strict";
+
 class Platform {
 
   constructor(spawn_x, spawn_y) {

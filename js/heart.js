@@ -1,3 +1,5 @@
+"use strict";
+
 class Heart {
 
   constructor(spawn_x) {

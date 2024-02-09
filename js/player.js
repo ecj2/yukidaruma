@@ -1,3 +1,5 @@
+"use strict";
+
 Player = new class {
 
   constructor() {
