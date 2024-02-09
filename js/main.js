@@ -346,14 +346,14 @@ function render() {
 
       renderLights();
 
-      Poyo.batchDrawing(true);
+      Poyo.useInstancing(true);
 
       renderHearts();
 
       Snowball.render();
       Player.render();
 
-      Poyo.batchDrawing(false);
+      Poyo.useInstancing(false);
 
     break;
   }
@@ -363,7 +363,7 @@ function render() {
 
 function renderBackground() {
 
-  Poyo.batchDrawing(true);
+  Poyo.useInstancing(true);
 
   // Draw background.
   Poyo.drawClippedBitmap(bitmap_background, 0, animation_frame * CANVAS_H, CANVAS_W, CANVAS_H, 0, background_y + CANVAS_H / 2);
@@ -371,12 +371,12 @@ function renderBackground() {
   // Draw birds.
   Poyo.drawClippedBitmap(bitmap_background, TILE_SIZE * 12, animation_frame * TILE_SIZE, TILE_SIZE, TILE_SIZE, birds_x, birds_y + background_y + CANVAS_H / 2);
 
-  Poyo.batchDrawing(false);
+  Poyo.useInstancing(false);
 }
 
 function renderPlatforms() {
 
-  Poyo.batchDrawing(true);
+  Poyo.useInstancing(true);
 
   Platforms.forEach(
 
@@ -386,7 +386,7 @@ function renderPlatforms() {
     }
   );
 
-  Poyo.batchDrawing(false);
+  Poyo.useInstancing(false);
 }
 
 function renderHearts() {
@@ -409,7 +409,7 @@ function renderLights() {
 
   let light_size = Poyo.getBitmapWidth(bitmap_light);
 
-  Poyo.batchDrawing(true);
+  Poyo.useInstancing(true);
 
   Hearts.forEach(
 
@@ -430,7 +430,7 @@ function renderLights() {
     }
   );
 
-  Poyo.batchDrawing(false);
+  Poyo.useInstancing(false);
 
   // Return to Poyo's default blend mode.
   WebGL2.blendFunc(WebGL2.SRC_ALPHA, WebGL2.ONE_MINUS_SRC_ALPHA);
@@ -481,7 +481,7 @@ function renderText() {
     }
   }
 
-  Poyo.batchDrawing(true);
+  Poyo.useInstancing(true);
 
   texts.forEach(
 
@@ -545,9 +545,9 @@ function renderText() {
     }
   );
 
-  Poyo.batchDrawing(false);
+  Poyo.useInstancing(false);
 
-  Poyo.batchDrawing(true);
+  Poyo.useInstancing(true);
 
   let score_string = score.toString();
 
@@ -611,5 +611,5 @@ function renderText() {
     Poyo.drawClippedBitmap(bitmap_score, 0, TILE_SIZE * 2 + animation_frame * TILE_SIZE, bitmap_width, TILE_SIZE, x, defeat_y);
   }
 
-  Poyo.batchDrawing(false);
+  Poyo.useInstancing(false);
 }

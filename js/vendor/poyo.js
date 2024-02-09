@@ -1,13 +1,19 @@
-// This is a modified version of Poyo (https://github.com/ecj2/poyo)
-// used for KrampusHack 2020 (http://tins.amarillion.org/krampu20).
-
 "use strict";
 
 let Poyo = new class {
 
   constructor() {
 
-    this.cache = {};
+    this.cache = {
+
+      tint: [],
+
+      texture: 0,
+
+      instance: false,
+
+      texture_offset: []
+    };
 
     this.mouse = {
 
@@ -27,6 +33,10 @@ let Poyo = new class {
     };
 
     this.keyboard = {
+
+      key: "",
+
+      code: 0,
 
       down: [],
 
@@ -111,17 +121,18 @@ let Poyo = new class {
       height: 0
     };
 
+    this.audio_context = undefined;
+
     this.time_initialized = undefined;
 
     this.sample_instances = [];
 
-    this.version = 1;
+    this.version = 2;
 
     this.shader_program = undefined;
-    this.uniforms = [];
+    this.uniforms = {};
 
     this.matrix = this.createTransform();
-    this.texture_matrix = this.createTransform();
 
     this.WebGL2 = undefined;
 
@@ -134,7 +145,7 @@ let Poyo = new class {
       magnification: undefined
     };
 
-    this.batch_drawing = false;
+    this.use_instancing = false;
 
     this.instanced_drawing_buffer = undefined;
     this.instanced_drawing_buffer_data = [];
@@ -164,10 +175,9 @@ let Poyo = new class {
     this.WRAP_REPEAT = 5;
     this.WRAP_MIRROR = 6;
 
-    this.MODE_TEXTURE = 0;
-    this.MODE_GEOMETRY = 1;
+    this.bitmap_reference_counter = 0;
 
-    this.transform_mode = this.MODE_GEOMETRY;
+    this.final_frame = undefined;
   }
 
   getErrors() {
@@ -187,22 +197,7 @@ let Poyo = new class {
     // Set the time in which the library was initialized.
     this.time_initialized = Date.now();
 
-    this.cache = {
-
-      tint: "",
-
-      texture: undefined,
-
-      texture_offset: [],
-
-      font_bitmap: undefined,
-
-      font_canvas: undefined,
-
-      font_canvas_context: undefined,
-
-      flip_texture_offset: false
-    };
+    this.audio_context = new AudioContext();
 
     this.canvas.canvas = document.getElementById("poyo");
 
@@ -237,7 +232,7 @@ let Poyo = new class {
 
         powerPreference: "high-performance",
 
-        preserveDrawingBuffer: true,
+        preserveDrawingBuffer: false,
 
         failIfMajorPerformanceCaveat: true
       }
@@ -249,6 +244,8 @@ let Poyo = new class {
 
       return;
     }
+
+    this.WebGL2.enable(this.WebGL2.SCISSOR_TEST);
 
     // Use nearest filtering and repeat textures.
     this.setNewBitmapFlags(this.MIN_NEAREST, this.MAG_NEAREST, this.WRAP_REPEAT);
@@ -276,13 +273,14 @@ let Poyo = new class {
     this.instanced_drawing_buffer = this.WebGL2.createBuffer();
 
     this.font.bitmap = this.createBitmap(this.target.width, this.target.height);
-    this.font.bitmap.must_be_flipped = false;
 
     this.font.canvas = document.createElement("canvas");
     this.font.context = this.font.canvas.getContext("2d");
 
     this.font.canvas.width = this.target.width;
     this.font.canvas.height = this.target.height;
+
+    this.final_frame = this.createBitmap(canvas_width, canvas_height);
 
     // Listen for mouse events.
     this.canvas.canvas.addEventListener("wheel", this.manageMouseEvents.bind(this));
@@ -318,21 +316,22 @@ let Poyo = new class {
 
       uniform vec2 u_resolution;
 
-      uniform bool u_instance;
+      uniform vec4 u_tint;
+      uniform vec4 u_texture_offset;
 
-      uniform bool u_flip_texture_offset;
+      uniform bool u_instance;
 
       out vec2 v_texture_position;
 
-      flat out int v_flip_texture_offset;
-
-      out vec4 v_instance_tint;
-      out vec4 v_instance_texture_offset;
+      out vec4 v_tint;
+      out vec4 v_texture_offset;
 
       void main(void) {
 
         mat3 matrix = u_matrix;
-        vec2 position = a_vertex_position;
+
+        v_tint = u_tint;
+        v_texture_offset = u_texture_offset;
 
         if (u_instance) {
 
@@ -343,27 +342,16 @@ let Poyo = new class {
           matrix[1][1] = a_instance_matrix_part_2[0];
           matrix[2][1] = a_instance_matrix_part_1[2];
 
-          if (u_flip_texture_offset) {
-
-            position.y *= -1.0;
-            position.y += u_resolution.y;
-          }
-
-          v_instance_tint = a_instance_tint;
-          v_instance_texture_offset = a_instance_texture_offset;
+          v_tint = a_instance_tint;
+          v_texture_offset = a_instance_texture_offset;
         }
 
         // Convert pixel coordinates to normalized device coordinates.
-        vec2 clip_space_position = vec2(matrix * vec3(position, 1.0)).xy / u_resolution * 2.0 - 1.0;
-
-        // Flip the Y axis.
-        clip_space_position.y *= -1.0;
+        vec2 clip_space_position = vec2(matrix * vec3(a_vertex_position, 1.0)).xy / u_resolution * 2.0 - 1.0;
 
         gl_Position = vec4(clip_space_position, 0.0, 1.0);
 
         v_texture_position = a_texture_position;
-
-        v_flip_texture_offset = (u_flip_texture_offset ? 1 : 0);
       }
     `;
 
@@ -375,75 +363,27 @@ let Poyo = new class {
 
       in vec2 v_texture_position;
 
-      uniform vec4 u_tint;
-
       uniform bool u_instance;
 
       uniform sampler2D u_texture;
 
-      uniform vec4 u_texture_offset;
+      in vec4 v_tint;
+      in vec4 v_texture_offset;
 
-      flat in int v_flip_texture_offset;
-
-      in vec4 v_instance_tint;
-      in vec4 v_instance_texture_offset;
-
-      uniform mat3 u_texture_matrix;
-      uniform vec2 u_texture_resolution;
-
-      out vec4 output_color;
+      out vec4 final_color;
 
       void main(void) {
 
-        bool reject;
+        vec2 p = v_texture_position;
 
-        vec2 position = v_texture_position;
+        p += v_texture_offset.st;
 
-        vec4 tint = u_tint;
-        vec4 texture_offset = u_texture_offset;
-
-        if (u_instance) {
-
-          tint = v_instance_tint;
-          texture_offset = v_instance_texture_offset;
-        }
-
-        if (v_flip_texture_offset == 1) {
-
-          if (!u_instance) position.t = position.t * -1.0 + 1.0;
-
-          position += vec2(texture_offset[0], -texture_offset[1]);
-
-          reject = position.t < texture_offset[3] * -1.0 + 1.0;
-        }
-        else {
-
-          position += vec2(texture_offset[0], texture_offset[1]);
-
-          reject = position.t > texture_offset[3];
-        }
-
-        reject = reject || position.t < 0.0 || position.t > 1.0 || position.s < 0.0;
-        reject = reject || position.s > texture_offset[2] || position.s > 1.0;
-
-        // reject = position < vec2(0.0) || position > vec2(1.0);
+        bool reject = p.s < 0.0 || p.s > v_texture_offset.p || p.s > 1.0;
 
         // Don't draw texels outside of the clipped offsets.
-        if (reject) discard;
+        if (reject || p.t < 0.0 || p.t > v_texture_offset.q || p.t > 1.0) discard;
 
-        mat3 matrix = u_texture_matrix;
-
-        // Invert translations.
-        // @TODO: Do on CPU?
-        matrix[2][0] *= -1.0;
-        matrix[2][1] *= -1.0;
-
-        // Convert pixel space to texture space.
-        position = vec2(matrix * vec3(position, 1.0)) / u_texture_resolution;
-
-        // if (u_instance) position = v_texture_position;
-
-        output_color = texture(u_texture, position) * tint;
+        final_color = texture(u_texture, p) * v_tint;
       }
     `;
 
@@ -507,16 +447,12 @@ let Poyo = new class {
 
   getUniformLocations() {
 
-    this.uniforms["u_texture_resolution"] = this.WebGL2.getUniformLocation(this.shader_program, "u_texture_resolution");
-    this.uniforms["u_texture_matrix"] = this.WebGL2.getUniformLocation(this.shader_program, "u_texture_matrix");
-
-    this.uniforms["u_tint"] = this.WebGL2.getUniformLocation(this.shader_program, "u_tint");
-    this.uniforms["u_matrix"] = this.WebGL2.getUniformLocation(this.shader_program, "u_matrix");
-    this.uniforms["u_texture"] = this.WebGL2.getUniformLocation(this.shader_program, "u_texture");
-    this.uniforms["u_instance"] = this.WebGL2.getUniformLocation(this.shader_program, "u_instance");
-    this.uniforms["u_resolution"] = this.WebGL2.getUniformLocation(this.shader_program, "u_resolution");
-    this.uniforms["u_texture_offset"] = this.WebGL2.getUniformLocation(this.shader_program, "u_texture_offset");
-    this.uniforms["u_flip_texture_offset"] = this.WebGL2.getUniformLocation(this.shader_program, "u_flip_texture_offset");
+    this.uniforms.u_tint = this.WebGL2.getUniformLocation(this.shader_program, "u_tint");
+    this.uniforms.u_matrix = this.WebGL2.getUniformLocation(this.shader_program, "u_matrix");
+    this.uniforms.u_texture = this.WebGL2.getUniformLocation(this.shader_program, "u_texture");
+    this.uniforms.u_instance = this.WebGL2.getUniformLocation(this.shader_program, "u_instance");
+    this.uniforms.u_resolution = this.WebGL2.getUniformLocation(this.shader_program, "u_resolution");
+    this.uniforms.u_texture_offset = this.WebGL2.getUniformLocation(this.shader_program, "u_texture_offset");
 
     let key = undefined;
 
@@ -543,23 +479,15 @@ let Poyo = new class {
       [
 
         // Vertex data.
-
         0, 0,
-
         this.target.width, 0,
-
         this.target.width, this.target.height,
-
         0, this.target.height,
 
         // Texture data.
-
         0, 0,
-
         1, 0,
-
         1, 1,
-
         0, 1
       ]
     );
@@ -574,10 +502,13 @@ let Poyo = new class {
     this.WebGL2.enableVertexAttribArray(1);
 
     // Upload the target's resolution.
-    this.WebGL2.uniform2fv(this.uniforms["u_resolution"], [this.target.width, this.target.height]);
+    this.WebGL2.uniform2fv(this.uniforms.u_resolution, [this.target.width, this.target.height]);
 
     // Restrict the viewport to the target's resolution.
     this.WebGL2.viewport(0, 0, this.target.width, this.target.height);
+
+    // Scissor beyond the target's resolution.
+    this.setClippingRectangle(0, 0, this.target.width, this.target.height);
   }
 
   getTime() {
@@ -790,6 +721,9 @@ let Poyo = new class {
         }
 
         this.keyboard.down[event.which] = true;
+
+        this.keyboard.key = event.key;
+        this.keyboard.code = event.which;
       break;
     }
 
@@ -880,6 +814,16 @@ let Poyo = new class {
     return this.keyboard.released[key];
   }
 
+  getKey() {
+
+    return this.keyboard.key;
+  }
+
+  getKeyCode() {
+
+    return this.keyboard.code;
+  }
+
   getCanvas() {
 
     return this.canvas.canvas;
@@ -911,6 +855,9 @@ let Poyo = new class {
 
     // Update the vertex buffer.
     this.setUniformsAndAttributes();
+
+    // Create a new final frame to match the new dimensions.
+    this.final_frame = this.createBitmap(this.canvas.width, this.canvas.height);
   }
 
   setCanvasHeight(height) {
@@ -921,6 +868,9 @@ let Poyo = new class {
 
     // Update the vertex buffer.
     this.setUniformsAndAttributes();
+
+    // Create a new final frame to match the new dimensions.
+    this.final_frame = this.createBitmap(this.canvas.width, this.canvas.height);
   }
 
   getCanvasWidth() {
@@ -989,13 +939,22 @@ let Poyo = new class {
 
       let now = performance.now();
 
+      // Limit loop to a maximum of 60 calls per second.
       if (now - then >= 1000 / 60) {
 
         then = now - (now - then) % (1000 / 60);
 
         this.pushTransform(this.matrix);
 
+        this.setDrawTarget(this.final_frame);
+
+        // Draw the procedure to the final frame.
         loop_procedure();
+
+        this.setDrawTarget(null);
+
+        // Vertically flip the final frame and draw it.
+        this.drawScaledBitmap(this.final_frame, 0, 0, 1, -1, 0, this.canvas.height);
 
         // Reset matrix each frame.
         this.popTransform(this.matrix);
@@ -1036,23 +995,9 @@ let Poyo = new class {
     return {r: r / 255, g: g / 255, b: b / 255, a: a / 255};
   }
 
-  setEntryPoint(function_name) {
+  loadFont(path, style = this.STYLE_NORMAL) {
 
-    // Call the specified function when the window loads.
-    window.addEventListener(
-
-      "load",
-
-      () => {
-
-        function_name();
-      }
-    );
-  }
-
-  loadFont(file_name, style = this.STYLE_NORMAL) {
-
-    return fetch(file_name).then(
+    return fetch(path).then(
 
       (response) => {
 
@@ -1066,7 +1011,7 @@ let Poyo = new class {
             @font-face {
 
               font-family: "${font_name}";
-              src: url("${file_name}");
+              src: url("${path}");
             }
           `;
 
@@ -1099,14 +1044,14 @@ let Poyo = new class {
 
   drawText(font, color, size, x, y, alignment, text) {
 
-    if (this.batch_drawing) {
+    if (this.use_instancing) {
 
       this.batch_text = true;
     }
 
     if (this.font.canvas.width != this.target.width || this.font.canvas.height != this.target.height) {
 
-      // Resize font bitmap and canvas.
+      // The target's dimensions changed; resize font bitmap and canvas to match.
 
       this.font.bitmap.width = this.target.width;
       this.font.bitmap.height = this.target.height;
@@ -1142,7 +1087,7 @@ let Poyo = new class {
 
     this.font.context.restore();
 
-    if (!this.batch_drawing) {
+    if (!this.use_instancing) {
 
       this.actuallyDrawText();
     }
@@ -1159,15 +1104,8 @@ let Poyo = new class {
     // Transformations were applied to the text canvas, not to the final bitmap.
     this.useTransform(this.createTransform());
 
-    this.pushTransform(this.texture_matrix);
-
-    // Prevent texture transformations from messing with drawing text.
-    this.texture_matrix.value = this.getIdentityTransform();
-
     // Draw the font bitmap.
     this.drawBitmap(this.font.bitmap, 0, 0);
-
-    this.popTransform(this.texture_matrix);
 
     this.popTransform(this.matrix);
 
@@ -1175,17 +1113,20 @@ let Poyo = new class {
     this.font.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  loadSample(file_name) {
+  loadSample(path) {
 
     let element = document.createElement("audio");
 
-    if (!!!element.canPlayType("audio/" + file_name.split(".").pop())) {
+    if (!!!element.canPlayType("audio/" + path.split(".").pop())) {
 
       // The browser can not play this audio format.
       return false;
     }
 
-    element.src = file_name;
+    element.src = path;
+
+    // Pre-load audio files. This fixes a bug in Firefox which may arise when loading big samples.
+    element.preload = "auto";
 
     let reject_function = undefined;
     let resolve_function = undefined;
@@ -1198,7 +1139,11 @@ let Poyo = new class {
 
           let sample = {
 
-            element: element
+            element: element,
+
+            track: undefined,
+
+            panner: undefined
           };
 
           resolve(sample);
@@ -1232,29 +1177,47 @@ let Poyo = new class {
     );
   }
 
-  playSample(sample, gain, speed, repeat, reference) {
+  playSample(sample, gain, speed, pan, repeat, reference) {
 
     if (this.sample_instances[reference] == undefined) {
 
       // Create a new instance of the sample.
-      this.sample_instances[reference] = sample.element.cloneNode();
+
+      let element_clone = sample.element.cloneNode();
+
+      let track = this.audio_context.createMediaElementSource(element_clone);
+      let panner = new StereoPannerNode(this.audio_context, {pan: pan});
+
+      this.sample_instances[reference] = {
+
+        element: element_clone,
+
+        track: track,
+
+        panner: panner
+      };
     }
+
+    let instance = this.sample_instances[reference];
+
+    instance.track.connect(instance.panner).connect(this.audio_context.destination);
 
     if (!this.isSamplePlaying(reference)) {
 
-      this.adjustSample(reference, gain, speed, repeat);
-
-      this.sample_instances[reference].play();
+      this.adjustSample(reference, gain, speed, pan, repeat);
     }
+
+    instance.element.play();
   }
 
-  adjustSample(reference, gain, speed, repeat) {
+  adjustSample(reference, gain, speed, pan, repeat) {
 
     if (this.sample_instances[reference] != undefined) {
 
-      this.sample_instances[reference].loop = repeat;
-      this.sample_instances[reference].volume = gain;
-      this.sample_instances[reference].playbackRate = speed;
+      this.sample_instances[reference].element.loop = repeat;
+      this.sample_instances[reference].element.volume = gain;
+      this.sample_instances[reference].panner.pan.value = pan;
+      this.sample_instances[reference].element.playbackRate = speed;
     }
   }
 
@@ -1266,7 +1229,7 @@ let Poyo = new class {
 
         this.pauseSample(reference);
 
-        this.sample_instances[reference].currentTime = 0;
+        this.sample_instances[reference].element.currentTime = 0;
       }
     }
   }
@@ -1277,7 +1240,7 @@ let Poyo = new class {
 
       if (this.isSamplePlaying(reference)) {
 
-        this.sample_instances[reference].pause();
+        this.sample_instances[reference].element.pause();
       }
     }
   }
@@ -1286,7 +1249,7 @@ let Poyo = new class {
 
     if (this.sample_instances[reference] != undefined) {
 
-      this.sample_instances[reference].play();
+      this.sample_instances[reference].element.play();
     }
   }
 
@@ -1298,7 +1261,7 @@ let Poyo = new class {
       return false;
     }
 
-    return this.sample_instances[reference].paused;
+    return this.sample_instances[reference].element.paused;
   }
 
   isSamplePlaying(reference) {
@@ -1314,7 +1277,7 @@ let Poyo = new class {
       return false;
     }
 
-    if (this.sample_instances[reference].currentTime < this.sample_instances[reference].duration) {
+    if (this.sample_instances[reference].element.currentTime < this.sample_instances[reference].element.duration) {
 
       return true;
     }
@@ -1322,19 +1285,24 @@ let Poyo = new class {
     return false;
   }
 
+  getSamplePan(reference) {
+
+    return this.sample_instances[reference].panner.pan.value;
+  }
+
   getSampleSpeed(reference) {
 
-    return this.sample_instances[reference].playbackRate;
+    return this.sample_instances[reference].element.playbackRate;
   }
 
   getSampleGain(reference) {
 
-    return this.sample_instances[reference].volume;
+    return this.sample_instances[reference].element.volume;
   }
 
   getSampleRepeat(reference) {
 
-    return this.sample_instances[reference].loop;
+    return this.sample_instances[reference].element.loop;
   }
 
   getSampleDuration(sample) {
@@ -1356,27 +1324,27 @@ let Poyo = new class {
       return 0;
     }
 
-    return this.sample_instances[reference].currentTime;
+    return this.sample_instances[reference].element.currentTime;
   }
 
   setSampleSeek(reference, seek) {
 
     if (this.sample_instances[reference] != undefined) {
 
-      this.sample_instances[reference].currentTime = seek;
+      this.sample_instances[reference].element.currentTime = seek;
     }
   }
 
-  batchDrawing(batch) {
+  useInstancing(use_instancing) {
 
-    if (!batch) {
+    if (!use_instancing) {
 
-      if (this.batch_drawing) {
+      if (this.use_instancing) {
 
         if (this.batch_text) {
 
           this.batch_text = false;
-          this.batch_drawing = false;
+          this.use_instancing = false;
 
           this.actuallyDrawText();
 
@@ -1391,14 +1359,14 @@ let Poyo = new class {
       }
     }
 
-    this.batch_drawing = batch;
+    this.use_instancing = use_instancing;
   }
 
-  loadBitmap(file_name) {
+  loadBitmap(path) {
 
     let element = new Image();
 
-    element.src = file_name;
+    element.src = path;
 
     let reject_function = undefined;
     let resolve_function = undefined;
@@ -1414,8 +1382,6 @@ let Poyo = new class {
           // Use the image's contents as a texture.
           this.WebGL2.bindTexture(this.WebGL2.TEXTURE_2D, bitmap.texture);
           this.WebGL2.texImage2D(this.WebGL2.TEXTURE_2D, 0, this.WebGL2.RGBA, this.WebGL2.RGBA, this.WebGL2.UNSIGNED_BYTE, element);
-
-          bitmap.must_be_flipped = false;
 
           resolve(bitmap);
         };
@@ -1523,15 +1489,15 @@ let Poyo = new class {
     // Don't attempt to draw anything if the buffer data is empty.
     if (this.instanced_drawing_buffer_data.length == 0) return;
 
-    if (this.cache.texture != this.instanced_bitmap.texture) {
+    if (this.cache.texture != this.instanced_bitmap.reference) {
 
       // Set the active texture.
       this.WebGL2.activeTexture(this.WebGL2.TEXTURE0);
       this.WebGL2.bindTexture(this.WebGL2.TEXTURE_2D, this.instanced_bitmap.texture);
-      this.WebGL2.uniform1i(this.uniforms["u_texture"], 0);
+      this.WebGL2.uniform1i(this.uniforms.u_texture, 0);
 
-      // Cache the texture for next time.
-      this.cache.texture = this.instanced_bitmap.texture;
+      // Cache the texture reference for next time.
+      this.cache.texture = this.instanced_bitmap.reference;
     }
 
     this.WebGL2.bindBuffer(this.WebGL2.ARRAY_BUFFER, this.instanced_drawing_buffer);
@@ -1557,79 +1523,22 @@ let Poyo = new class {
     this.WebGL2.vertexAttribDivisor(5, 1);
     this.WebGL2.enableVertexAttribArray(5);
 
-    if (this.cache.instance != this.batch_drawing) {
+    if (this.cache.instance != this.use_instancing) {
 
-      this.WebGL2.uniform1i(this.uniforms["u_instance"], this.batch_drawing);
+      this.WebGL2.uniform1i(this.uniforms.u_instance, this.use_instancing);
 
-      this.cache.instance = this.batch_drawing;
+      this.cache.instance = this.use_instancing;
     }
-
-    let flip_it = this.instanced_bitmap.must_be_flipped && !this.cache.flip_texture_offset;
-
-    if (flip_it) {
-
-      // Flip the texture offsets.
-      this.WebGL2.uniform1i(this.uniforms["u_flip_texture_offset"], true);
-    }
-
-    // @TODO: Check addBitmapInstance() to see if it's doing any scaling, and adjust accordingly for texture transforms.
-    // @TODO: It has something to do with scaling.
-
-    this.pushTransform(this.texture_matrix);
-
-    let mode = this.transform_mode;
-
-    this.setTransformMode(this.MODE_GEOMETRY);
-
-    // Scale the texture so it appears properly.
-    this.scaleTransform(this.texture_matrix, this.instanced_bitmap.width, this.instanced_bitmap.height);
-
-    // Upload the texture transformation matrix.
-    this.WebGL2.uniformMatrix3fv(this.uniforms["u_texture_matrix"], false, this.texture_matrix.value);
-
-    this.popTransform(this.texture_matrix);
-
-    this.setTransformMode(mode);
-
-    // @TODO: Cache this.
-    this.WebGL2.uniform2fv(this.uniforms["u_texture_resolution"], [this.instanced_bitmap.width, this.instanced_bitmap.height]);
 
     this.WebGL2.drawArraysInstanced(this.WebGL2.TRIANGLE_FAN, 0, 4, this.instanced_drawing_buffer_data.length / 14);
-
-    if (flip_it) {
-
-      // Flip texture offsets back without affecting cache.
-      this.WebGL2.uniform1i(this.uniforms["u_flip_texture_offset"], false);
-    }
-
-    // @TODO: Make texture transformations work in batches.
   }
 
   addBitmapInstance(bitmap, offsets = [0, 0, 1, 1], tint = this.createColor(255, 255, 255)) {
 
     this.instanced_bitmap = bitmap;
 
-    let test = false;
-
     // Scale instanced bitmap to its proper resolution.
-    if (this.transform_mode == this.MODE_TEXTURE) {
-
-      test = true;
-    }
-
-    let mode = this.transform_mode;
-
-    if (test) {
-
-      this.setTransformMode(this.MODE_GEOMETRY);
-    }
-
     this.scaleTransform(this.matrix, bitmap.width / this.target.width, bitmap.height / this.target.height);
-
-    if (test) {
-
-      this.setTransformMode(this.MODE_TEXTURE);
-    }
 
     this.instanced_drawing_buffer_data.push(
 
@@ -1643,26 +1552,29 @@ let Poyo = new class {
     );
   }
 
-  drawConsolidatedBitmap(bitmap, texture_offset = [0, 0, 1, 1], tint = this.createColor(255, 255, 255), flip_texture_offset = false) {
+  drawConsolidatedBitmap(bitmap, texture_offset = [0, 0, 1, 1], tint = this.createColor(255, 255, 255)) {
 
-    if (this.cache.tint != "" + tint.r + tint.g + tint.b + tint.a) {
+    let t = tint;
+    let c = this.cache.tint;
+
+    if (c[0] != t.r || c[1] != t.g || c[2] != t.b || c[3] != t.a)  {
 
       // Upload the tint.
-      this.WebGL2.uniform4fv(this.uniforms["u_tint"], [tint.r, tint.g, tint.b, tint.a]);
+      this.WebGL2.uniform4fv(this.uniforms.u_tint, [tint.r, tint.g, tint.b, tint.a]);
 
       // Cache the tint for next time.
-      this.cache.tint = "" + tint.r + tint.g + tint.b + tint.a;
+      this.cache.tint = [t.r, t.g, t.b, t.a];
     }
 
-    if (this.cache.texture != bitmap.texture) {
+    if (this.cache.texture != bitmap.reference) {
 
       // Set the active texture.
       this.WebGL2.activeTexture(this.WebGL2.TEXTURE0);
       this.WebGL2.bindTexture(this.WebGL2.TEXTURE_2D, bitmap.texture);
-      this.WebGL2.uniform1i(this.uniforms["u_texture"], 0);
+      this.WebGL2.uniform1i(this.uniforms.u_texture, 0);
 
-      // Cache the texture for next time.
-      this.cache.texture = bitmap.texture;
+      // Cache the texture reference for next time.
+      this.cache.texture = bitmap.reference;
     }
 
     let i = 0;
@@ -1672,7 +1584,7 @@ let Poyo = new class {
       if (this.cache.texture_offset[i] != texture_offset[i]) {
 
         // Upload the texture offset.
-        this.WebGL2.uniform4fv(this.uniforms["u_texture_offset"], texture_offset);
+        this.WebGL2.uniform4fv(this.uniforms.u_texture_offset, texture_offset);
 
         // Cache the texture offset for next time.
         this.cache.texture_offset = texture_offset;
@@ -1681,57 +1593,24 @@ let Poyo = new class {
       }
     }
 
-    if (this.cache.flip_texture_offset != flip_texture_offset) {
+    if (this.cache.instance != this.use_instancing) {
 
-      // Flip the texture offset.
-      this.WebGL2.uniform1i(this.uniforms["u_flip_texture_offset"], flip_texture_offset);
+      // Upload the instancing value.
+      this.WebGL2.uniform1i(this.uniforms.u_instance, this.use_instancing);
 
-      // Cache this for next time.
-      this.cache.flip_texture_offset = flip_texture_offset;
-    }
-
-    if (this.cache.instance != this.batch_drawing) {
-
-      this.WebGL2.uniform1i(this.uniforms["u_instance"], this.batch_drawing);
-
-      this.cache.instance = this.batch_drawing;
+      // Cache it for next time.
+      this.cache.instance = this.use_instancing;
     }
 
     this.pushTransform(this.matrix);
-
-    if (bitmap.must_be_flipped) {
-
-      // Flip framebuffer textures right-side up.
-      this.scaleTransform(this.matrix, 1, -1);
-      this.translateTransform(this.matrix, 0, -bitmap.height);
-    }
-
-    let mode = this.transform_mode;
-
-    this.setTransformMode(this.MODE_GEOMETRY);
 
     // Scale the bitmap to its proper resolution.
     this.scaleTransform(this.matrix, bitmap.width / this.target.width, bitmap.height / this.target.height);
 
     // Upload the transformation matrix.
-    this.WebGL2.uniformMatrix3fv(this.uniforms["u_matrix"], false, this.matrix.value);
+    this.WebGL2.uniformMatrix3fv(this.uniforms.u_matrix, false, this.matrix.value);
 
     this.popTransform(this.matrix);
-
-    this.pushTransform(this.texture_matrix);
-
-    // Scale the texture so it appears properly.
-    this.scaleTransform(this.texture_matrix, bitmap.width, bitmap.height);
-
-    // Upload the texture transformation matrix.
-    this.WebGL2.uniformMatrix3fv(this.uniforms["u_texture_matrix"], false, this.texture_matrix.value);
-
-    this.popTransform(this.texture_matrix);
-
-    // @TODO: Cache this.
-    this.WebGL2.uniform2fv(this.uniforms["u_texture_resolution"], [bitmap.width, bitmap.height]);
-
-    this.setTransformMode(mode);
 
     // Draw the bitmap.
     this.WebGL2.drawArrays(this.WebGL2.TRIANGLE_FAN, 0, 4);
@@ -1743,7 +1622,7 @@ let Poyo = new class {
 
     this.translateTransform(this.matrix, x, y);
 
-    if (this.batch_drawing) {
+    if (this.use_instancing) {
 
       this.addBitmapInstance(bitmap, undefined, tint);
     }
@@ -1763,7 +1642,7 @@ let Poyo = new class {
     this.scaleTransform(this.matrix, scale_x, scale_y);
     this.translateTransform(this.matrix, -origin_x, -origin_y);
 
-    if (this.batch_drawing) {
+    if (this.use_instancing) {
 
       this.addBitmapInstance(bitmap, undefined, tint);
     }
@@ -1792,24 +1671,13 @@ let Poyo = new class {
 
     this.translateTransform(this.matrix, x, y);
 
-    if (this.batch_drawing) {
+    if (this.use_instancing) {
 
       this.addBitmapInstance(bitmap, texture_offset, tint);
     }
     else {
 
-      if (bitmap.must_be_flipped) {
-
-        bitmap.must_be_flipped = false;
-
-        this.drawConsolidatedBitmap(bitmap, texture_offset, tint, true);
-
-        bitmap.must_be_flipped = true;
-      }
-      else {
-
-        this.drawConsolidatedBitmap(bitmap, texture_offset, tint, false);
-      }
+      this.drawConsolidatedBitmap(bitmap, texture_offset, tint);
     }
 
     this.popTransform(this.matrix);
@@ -1817,17 +1685,13 @@ let Poyo = new class {
 
   drawRotatedBitmap(bitmap, center_x, center_y, draw_x, draw_y, theta, tint) {
 
-    let mode = this.transform_mode;
-
-    this.setTransformMode(this.MODE_GEOMETRY);
-
     this.pushTransform(this.matrix);
 
     this.translateTransform(this.matrix, draw_x, draw_y);
     this.rotateTransform(this.matrix, theta);
     this.translateTransform(this.matrix, -center_x, -center_y);
 
-    if (this.batch_drawing) {
+    if (this.use_instancing) {
 
       this.addBitmapInstance(bitmap, undefined, tint);
     }
@@ -1837,8 +1701,6 @@ let Poyo = new class {
     }
 
     this.popTransform(this.matrix);
-
-    this.setTransformMode(mode);
   }
 
   getIdentityTransform() {
@@ -1850,7 +1712,7 @@ let Poyo = new class {
       0, 1, 0,
 
       0, 0, 1
-    ]
+    ];
   }
 
   createTransform() {
@@ -1865,30 +1727,10 @@ let Poyo = new class {
 
   useTransform(transform) {
 
-    switch (this.transform_mode) {
-
-      case this.MODE_TEXTURE:
-
-        this.texture_matrix.value = transform.value;
-      break;
-
-      case this.MODE_GEOMETRY:
-
-        this.matrix.value = transform.value;
-      break;
-    }
+    this.matrix.value = transform.value;
   }
 
   scaleTransform(transform, scale_x, scale_y) {
-
-    // @TODO: See if this needs to be done with skewing as well. Remove skew?
-
-    if (this.transform_mode == this.MODE_TEXTURE) {
-
-      // Fix scaling when applied to textures.
-      scale_x = 1 / scale_x;
-      scale_y = 1 / scale_y;
-    }
 
     let scaled_matrix = [
 
@@ -1904,16 +1746,8 @@ let Poyo = new class {
 
   rotateTransform(transform, theta) {
 
-    let direction = 1;
-
-    if  (this.transform_mode == this.MODE_TEXTURE) {
-
-      // Fix rotation direction when applied to textures, lest it be counter-clockwise.
-      direction = -1;
-    }
-
-    let sine = Math.sin(theta * direction);
-    let cosine = Math.cos(theta * direction);
+    let sine = Math.sin(theta);
+    let cosine = Math.cos(theta);
 
     let rotated_matrix = [
 
@@ -1935,7 +1769,7 @@ let Poyo = new class {
 
       0, 1, 0,
 
-      translate_x | 0, translate_y | 0, 1
+      translate_x, translate_y, 1
     ];
 
     transform.value = this.multiplyMatrices(transform.value, translated_matrix);
@@ -1970,13 +1804,6 @@ let Poyo = new class {
     return multiplied_matrix;
   }
 
-  setTransformMode(mode) {
-
-    // @TODO: Add this to REFERENCE.md.
-
-    this.transform_mode = mode;
-  }
-
   createBitmap(width, height) {
 
     let framebuffer = this.WebGL2.createFramebuffer();
@@ -1984,12 +1811,10 @@ let Poyo = new class {
     let texture = this.WebGL2.createTexture();
 
     this.WebGL2.bindTexture(this.WebGL2.TEXTURE_2D, texture);
-
     this.WebGL2.texImage2D(this.WebGL2.TEXTURE_2D, 0, this.WebGL2.RGBA, width, height, 0, this.WebGL2.RGBA, this.WebGL2.UNSIGNED_BYTE, null);
 
     this.WebGL2.texParameteri(this.WebGL2.TEXTURE_2D, this.WebGL2.TEXTURE_WRAP_S, this.texture_wrap_s);
     this.WebGL2.texParameteri(this.WebGL2.TEXTURE_2D, this.WebGL2.TEXTURE_WRAP_T, this.texture_wrap_t);
-
     this.WebGL2.texParameteri(this.WebGL2.TEXTURE_2D, this.WebGL2.TEXTURE_MIN_FILTER, this.texture_filtering.minification);
     this.WebGL2.texParameteri(this.WebGL2.TEXTURE_2D, this.WebGL2.TEXTURE_MAG_FILTER, this.texture_filtering.magnification);
 
@@ -2013,7 +1838,7 @@ let Poyo = new class {
 
       framebuffer: framebuffer,
 
-      must_be_flipped: true
+      reference: ++this.bitmap_reference_counter
     };
   }
 
@@ -2044,6 +1869,32 @@ let Poyo = new class {
 
   getDefaultDrawTarget() {
 
-    return null;
+    return this.final_frame;
+  }
+
+  clearCache() {
+
+    // Reset cache to defaults.
+    this.cache = {
+
+      tint: [],
+
+      texture: 0,
+
+      instance: false,
+
+      texture_offset: []
+    };
+
+    // Revert to default shader program and draw target.
+    this.setDrawTarget(this.getDefaultDrawTarget());
+  }
+
+  setClippingRectangle(x, y, w, h) {
+
+    // Move the scissor's origin to the top.
+    y = this.target.height - h - y;
+
+    this.WebGL2.scissor(x, y, w, h);
   }
 };
