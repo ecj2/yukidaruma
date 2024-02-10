@@ -21,87 +21,136 @@ async function main() {
   Poyo.createGameLoop(loop);
 }
 
+function setStatus(resource, is_error = false) {
+
+  let status = document.getElementById("status");
+
+  if (is_error) {
+
+    let message = "failed to load " + resource + "!";
+
+    status.innerHTML = "Error: " + message;
+
+    throw new Error(message);
+  }
+  else {
+
+    status.innerHTML = "Loading " + resource + "...";
+  }
+}
+
 async function loadResources() {
+
+  setStatus("atlas.png");
 
   bitmap_atlas = await Poyo.loadBitmap("data/png/atlas.png");
 
   if (!bitmap_atlas) {
 
-    Poyo.displayError("failed to load atlas.png");
+    setStatus("atlas.png", true);
   }
+
+  setStatus("text.png");
 
   bitmap_text = await Poyo.loadBitmap("data/png/text.png");
 
   if (!bitmap_text) {
 
-    Poyo.displayError("failed to load text.png");
+    setStatus("text.png", true);
   }
+
+  setStatus("background.png");
 
   bitmap_background = await Poyo.loadBitmap("data/png/background.png");
 
   if (!bitmap_background) {
 
-    Poyo.displayError("failed to load background.png");
+    setStatus("background.png", true);
   }
+
+  setStatus("score.png");
 
   bitmap_score = await Poyo.loadBitmap("data/png/score.png");
 
   if (!bitmap_score) {
 
-    Poyo.displayError("failed to load score.png");
+    setStatus("score.png", true);
   }
 
   // Use linear texture filtering on lights (hopefully reduces some banding).
   Poyo.setNewBitmapFlags(Poyo.MIN_LINEAR, Poyo.MAG_LINEAR);
 
+  setStatus("light.png");
+
   bitmap_light = await Poyo.loadBitmap("data/png/light.png");
 
   if (!bitmap_light) {
 
-    Poyo.displayError("failed to load light.png");
+    setStatus("light.png", true);
   }
+
+  setStatus("pop.mp3");
 
   sample_pop = await Poyo.loadSample("data/mp3/pop.mp3");
 
   if (!sample_pop) {
 
-    Poyo.displayError("failed to load pop.mp3");
+    setStatus("pop.mp3", true);
   }
+
+  setStatus("whoosh.mp3");
 
   sample_whoosh = await Poyo.loadSample("data/mp3/whoosh.mp3");
 
   if (!sample_whoosh) {
 
-    Poyo.displayError("failed to load whoosh.mp3");
+    setStatus("whoosh.mp3", true);
   }
+
+  setStatus("slide.mp3");
 
   sample_slide = await Poyo.loadSample("data/mp3/slide.mp3");
 
   if (!sample_slide) {
 
-    Poyo.displayError("failed to load slide.mp3");
+    setStatus("slide.mp3", true);
   }
+
+  setStatus("defeat.mp3");
 
   sample_defeat = await Poyo.loadSample("data/mp3/defeat.mp3");
 
   if (!sample_defeat) {
 
-    Poyo.displayError("failed to load defeat.mp3");
+    setStatus("defeat.mp3", true);
   }
+
+  setStatus("special.mp3");
 
   sample_special = await Poyo.loadSample("data/mp3/special.mp3");
 
   if (!sample_special) {
 
-    Poyo.displayError("failed to load special.mp3");
+    setStatus("special.mp3", true);
   }
+
+  setStatus("background.mp3");
 
   sample_background = await Poyo.loadSample("data/mp3/background.mp3");
 
   if (!sample_background) {
 
-    Poyo.displayError("failed to load background.mp3");
+    setStatus("background.mp3", true);
   }
+
+  // Hide the status text.
+  document.getElementById("status").style = "display: none";
+
+  // Show fullscreen and source links.
+  document.getElementById("grid").style = "display: flex; width: 768px;";
+
+  // Show canvas.
+  document.getElementById("poyo").style = "display: inherit";
 }
 
 function loop() {
