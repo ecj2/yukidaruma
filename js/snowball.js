@@ -41,7 +41,9 @@ Snowball = new class {
       this.x = Player.getX();
       this.y = Player.getY();
 
-      Poyo.playSample(sample_whoosh, master_gain, 1, false, getRandomReference());
+      let pan = (this.x / CANVAS_W - 0.5) * 2;
+
+      Poyo.playSample(sample_whoosh, master_gain, 1, pan, false, getReference(WHOOSH));
     }
 
     if (!this.show) {
@@ -73,7 +75,9 @@ Snowball = new class {
         Hearts[i].destroy();
         Hearts[i].calculateScore();
 
-        Poyo.playSample(sample_pop, master_gain, 1, false, getRandomReference());
+        let pan = (this.x / CANVAS_W - 0.5) * 2;
+
+        Poyo.playSample(sample_pop, master_gain, 1, pan, false, getReference(POP));
 
         this.show = false;
 

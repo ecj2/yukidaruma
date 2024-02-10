@@ -292,7 +292,7 @@ function updateHearts() {
     }
 
     // Increase background music as the game progresses. Cap to 4x to appease Firefox.
-    Poyo.adjustSample(0, master_gain - 0.5, Math.min(4, music_speed), true);
+    Poyo.adjustSample(getReference(BACKGROUND), master_gain - 0.5, Math.min(4, music_speed), 0, true);
   }
 }
 
@@ -466,7 +466,7 @@ function reset() {
   goals_met = 0;
 
   // Play background music.
-  Poyo.playSample(sample_background, master_gain - 0.5, 1, true, 0);
+  Poyo.playSample(sample_background, master_gain - 0.5, 1, 0, true, getReference(BACKGROUND));
 }
 
 function renderText() {

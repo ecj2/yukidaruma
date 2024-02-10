@@ -208,7 +208,9 @@ Player = new class {
       // Bounce up.
       this.vel_y = -15;
 
-      Poyo.playSample(sample_defeat, master_gain, 1, false, getRandomReference());
+      let pan = (this.x / CANVAS_W - 0.5) * 2;
+
+      Poyo.playSample(sample_defeat, master_gain, 1, pan, false, getReference(DEFEAT));
     }
 
     this.defeated = true;
