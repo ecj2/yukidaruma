@@ -158,6 +158,7 @@ class Heart {
 
       // Scale the heart as though it were pulsating.
       Poyo.translateTransform(transform, this.x + TILE_SIZE / 2, this.y + TILE_SIZE / 2);
+      Poyo.rotateTransform(transform, Math.sin(this.time_initialized + Poyo.getTime()) / 6) * 3;
       Poyo.scaleTransform(transform, this.scale, this.scale);
       Poyo.translateTransform(transform, -TILE_SIZE / 2, -TILE_SIZE / 2);
       Poyo.useTransform(transform);
