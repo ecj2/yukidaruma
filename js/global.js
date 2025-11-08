@@ -42,7 +42,7 @@ let animation_frame = 0;
 let heart_ticks = 90;
 
 let score = 0;
-let highscore = (localStorage.getItem("highscore") == null ? 5000 : localStorage.highscore);
+let highscore = (localStorage.getItem("highscore") === null ? 5000 : localStorage.highscore);
 
 let last_spawn_x = 0;
 

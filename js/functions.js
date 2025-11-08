@@ -37,7 +37,7 @@ function getRandomRange(max) {
 
 function isColliding(a_x, a_y, b_x, b_y, a_w, a_h, b_w, b_h) {
 
-  if (a_w == undefined || a_h == undefined || b_w == undefined || b_h == undefined) {
+  if (a_w === undefined || a_h === undefined || b_w === undefined || b_h === undefined) {
 
     // Default to tile size for all dimensions.
     a_w = TILE_SIZE;

@@ -451,7 +451,7 @@ function renderLights() {
 
     let tint = Heart.getTint();
 
-    if (tint.b == 64 / 255) {
+    if (tint.b === 64 / 255) {
 
       // Use pure red for non-green hearts.
       tint = Poyo.createColor(255, 0, 0);
@@ -500,7 +500,7 @@ function reset() {
 
 function renderText() {
 
-  if (state == STATE_GAME && !transitioned_score && score_y < 0) {
+  if (state === STATE_GAME && !transitioned_score && score_y < 0) {
 
     score_y += 3;
 
@@ -618,7 +618,7 @@ function renderText() {
     let x = CANVAS_W / 2 - bitmap_width / 2;
     let y = CANVAS_H / 2 - TILE_SIZE / 2;
 
-    if (state == STATE_INTRO && show_again_direction == 1) {
+    if (state === STATE_INTRO && show_again_direction === 1) {
 
       show_again_direction = -1;
     }

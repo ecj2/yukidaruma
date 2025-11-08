@@ -11,7 +11,7 @@ class Heart {
 
     this.fall_speed = (global_speed > 6 ? 6 : global_speed);
 
-    if ((getRandomNumber() * 9 | 0) == 0) {
+    if ((getRandomNumber() * 9 | 0) === 0) {
 
       this.fall_speed += 2;
     }
@@ -20,7 +20,7 @@ class Heart {
 
     this.type = TYPE_NORMAL;
 
-    if (Hearts.length > 9 && (getRandomNumber() * 100 | 0) % 20 == 1 || (global_speed > 5 && (getRandomNumber() * 100 | 0) % 10 == 1)) {
+    if (Hearts.length > 9 && (getRandomNumber() * 100 | 0) % 20 === 1 || (global_speed > 5 && (getRandomNumber() * 100 | 0) % 10 === 1)) {
 
       let active_hearts = 0;
 
@@ -44,7 +44,7 @@ class Heart {
 
     this.tint = Poyo.createColor(238, 47, 64);
 
-    if (((getRandomNumber() * 100) | 0) % 10 == 0) {
+    if (((getRandomNumber() * 100) | 0) % 10 === 0) {
 
       // Spawn some hearts with a green-ish tint.
       this.tint = Poyo.createColor(63, 216, 90);
@@ -111,7 +111,7 @@ class Heart {
     }
 
     // Move the heart down the screen.
-    this.y += this.fall_speed / (this.type == TYPE_SPECIAL ? 2 : 1);
+    this.y += this.fall_speed / (this.type === TYPE_SPECIAL ? 2 : 1);
 
     if (this.y > CANVAS_H) {
 
@@ -130,7 +130,7 @@ class Heart {
       return;
     }
 
-    if (this.type == TYPE_SPECIAL) {
+    if (this.type === TYPE_SPECIAL) {
 
       --this.ticks;
 
@@ -191,7 +191,7 @@ class Heart {
 
     this.destroyed = true;
 
-    if (!this.used_ability && this.type == TYPE_SPECIAL) {
+    if (!this.used_ability && this.type === TYPE_SPECIAL) {
 
       // Player struck a special heart.
 
@@ -263,15 +263,15 @@ class Heart {
 
     let increase = 0;
 
-    if (height == 7 || height == 6) {
+    if (height === 7 || height === 6) {
 
       increase = 300;
     }
-    else if (height == 5) {
+    else if (height === 5) {
 
       increase = 100;
     }
-    else if (height == 4) {
+    else if (height === 4) {
 
       increase = 50;
     }
