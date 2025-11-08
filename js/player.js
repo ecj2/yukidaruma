@@ -4,7 +4,7 @@ Player = new class {
 
   constructor() {
 
-    this.x = CANVAS_W / 2;
+    this.x = CANVAS_W / 2 - TILE_SIZE / 2;
     this.y = -TILE_SIZE;
 
     this.vel_y = 0;
