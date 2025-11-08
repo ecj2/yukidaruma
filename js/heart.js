@@ -24,16 +24,13 @@ class Heart {
 
       let active_hearts = 0;
 
-      Hearts.forEach(
+      for (const Heart of Hearts) {
 
-        (Heart) => {
+        if (!Heart.isDestroyed()) {
 
-          if (!Heart.isDestroyed()) {
-
-            ++active_hearts;
-          }
+          ++active_hearts;
         }
-      );
+      }
 
       if (active_hearts > 2) {
 
@@ -92,29 +89,26 @@ class Heart {
       this.destroy();
     }
 
-    Platforms.forEach(
+    for (const Platform of Platforms) {
 
-      (Platform) => {
+      if ((Platform.isRespawning() || !Platform.isBroken()) && isColliding(this.x, this.y, Platform.getX(), Platform.getY())) {
 
-        if ((Platform.isRespawning() || !Platform.isBroken()) && isColliding(this.x, this.y, Platform.getX(), Platform.getY())) {
+        // Heart collided with platform.
 
-          // Heart collided with platform.
+        this.type = TYPE_NORMAL;
 
-          this.type = TYPE_NORMAL;
+        if (!Platform.isRespawning()) {
 
-          if (!Platform.isRespawning()) {
-
-            Platform.break();
-          }
-
-          this.destroy();
-
-          let pan = (this.x / CANVAS_W - 0.5) * 2;
-
-          Poyo.playSample(sample_pop, master_gain, 1, pan, false);
+          Platform.break();
         }
+
+        this.destroy();
+
+        let pan = (this.x / CANVAS_W - 0.5) * 2;
+
+        Poyo.playSample(sample_pop, master_gain, 1, pan, false);
       }
-    );
+    }
 
     // Move the heart down the screen.
     this.y += this.fall_speed / (this.type == TYPE_SPECIAL ? 2 : 1);
@@ -215,34 +209,28 @@ class Heart {
 
       Poyo.playSample(sample_special, master_gain, 1, pan, false);
 
-      Hearts.forEach(
+      for (const Heart of Hearts) {
 
-        (Heart) => {
+        if (!Heart.isDestroyed()) {
 
-          if (!Heart.isDestroyed()) {
+          // Convert to normal heart to prevent the ability from being used again.
+          Heart.type = TYPE_NORMAL;
 
-            // Convert to normal heart to prevent the ability from being used again.
-            Heart.type = TYPE_NORMAL;
-
-            Heart.destroy();
-            Heart.calculateScore();
-          }
+          Heart.destroy();
+          Heart.calculateScore();
         }
-      );
+      }
 
       hit_special = false;
 
-      Platforms.forEach(
+      for (const Platform of Platforms) {
 
-        (Platform) => {
+        if (!Platform.isRespawning() && Platform.isBroken()) {
 
-          if (!Platform.isRespawning() && Platform.isBroken()) {
-
-            // Repair broken platforms.
-            Platform.repair();
-          }
+          // Repair broken platforms.
+          Platform.repair();
         }
-      );
+      }
     }
   }
 

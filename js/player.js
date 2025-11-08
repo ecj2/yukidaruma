@@ -102,40 +102,37 @@ Player = new class {
       this.vel_y = 0;
     }
 
-    Platforms.forEach(
+    for (const Platform of Platforms) {
 
-      (Platform) => {
+      if (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
 
-        if (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
+        if (Platform.isBroken()) {
 
-          if (Platform.isBroken()) {
+          // Player tried to cross a broken platform.
 
-            // Player tried to cross a broken platform.
+          this.vel_y = 0;
 
-            this.vel_y = 0;
+          switch (this.facing_direction) {
 
-            switch (this.facing_direction) {
+            case FACING_LEFT:
 
-              case FACING_LEFT:
+              while (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
 
-                while (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
+                ++this.x;
+              }
+            break;
 
-                  ++this.x;
-                }
-              break;
+            case FACING_RIGHT:
 
-              case FACING_RIGHT:
+              while (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
 
-                while (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
-
-                  --this.x;
-                }
-              break;
-            }
+                --this.x;
+              }
+            break;
           }
         }
       }
-    );
+    }
 
     if (this.x < 0 || this.x + TILE_SIZE > CANVAS_W) {
 
