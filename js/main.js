@@ -588,7 +588,7 @@ function renderText() {
           break;
         }
 
-        tint.a = (Text.ticks_fade / 60);
+        tint.a = 255 * (Text.ticks_fade / 60);
 
         // Draw score increases.
         Poyo.drawClippedBitmap(bitmap_atlas, text_tile_x * TILE_SIZE, 2 * TILE_SIZE + TILE_SIZE * animation_frame, TILE_SIZE, TILE_SIZE, Text.x, Text.y, tint);
