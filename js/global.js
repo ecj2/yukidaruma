@@ -149,52 +149,6 @@ function getRandomRange(max) {
   return (getRandomNumber() * 100 | 0) % max;
 }
 
-let references = {};
-
-const BACKGROUND = 0;
-const DEFEAT = 1;
-const POP = 2;
-const SLIDE = 3;
-const SPECIAL = 4;
-const WHOOSH = 5;
-
-let reference_counter = 0;
-
-function addReference(name, max) {
-
-  references[name] = {
-
-    start: reference_counter,
-
-    stop: reference_counter + max - 1,
-
-    value: reference_counter
-  };
-
-  reference_counter += max;
-}
-
-addReference(BACKGROUND, 1);
-addReference(DEFEAT, 1);
-addReference(POP, 12);
-addReference(SLIDE, 12);
-addReference(SPECIAL, 1);
-addReference(WHOOSH, 5);
-
-function getReference(name) {
-
-  let ref = references[name];
-
-  ++ref.value;
-
-  if (ref.value > ref.stop) {
-
-    ref.value = ref.start;
-  }
-
-  return ref.value;
-}
-
 let goal;
 let goals_met;
 

@@ -111,7 +111,7 @@ class Heart {
 
           let pan = (this.x / CANVAS_W - 0.5) * 2;
 
-          Poyo.playSample(sample_pop, master_gain, 1, pan, false, getReference(POP));
+          Poyo.playSample(sample_pop, master_gain, 1, pan, false);
         }
       }
     );
@@ -213,7 +213,7 @@ class Heart {
 
       let pan = (this.x / CANVAS_W - 0.5) * 2;
 
-      Poyo.playSample(sample_special, master_gain, 1, pan, false, getReference(SPECIAL));
+      Poyo.playSample(sample_special, master_gain, 1, pan, false);
 
       Hearts.forEach(
 

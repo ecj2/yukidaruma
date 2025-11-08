@@ -126,7 +126,7 @@ class Platform {
 
     let pan = (this.x / CANVAS_W - 0.5) * 2;
 
-    Poyo.playSample(sample_slide, master_gain, 1, pan, false, getReference(SLIDE));
+    Poyo.playSample(sample_slide, master_gain, 1, pan, false);
 
     if (this.bounced) {
 

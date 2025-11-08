@@ -89,9 +89,18 @@ async function loadResources() {
     setStatus("light.png", true);
   }
 
+  setStatus("background.mp3");
+
+  sample_background = await Poyo.loadSample("data/mp3/background.mp3", 1);
+
+  if (!sample_background) {
+
+    setStatus("background.mp3", true);
+  }
+
   setStatus("pop.mp3");
 
-  sample_pop = await Poyo.loadSample("data/mp3/pop.mp3");
+  sample_pop = await Poyo.loadSample("data/mp3/pop.mp3", 12);
 
   if (!sample_pop) {
 
@@ -100,7 +109,7 @@ async function loadResources() {
 
   setStatus("whoosh.mp3");
 
-  sample_whoosh = await Poyo.loadSample("data/mp3/whoosh.mp3");
+  sample_whoosh = await Poyo.loadSample("data/mp3/whoosh.mp3", 5);
 
   if (!sample_whoosh) {
 
@@ -109,7 +118,7 @@ async function loadResources() {
 
   setStatus("slide.mp3");
 
-  sample_slide = await Poyo.loadSample("data/mp3/slide.mp3");
+  sample_slide = await Poyo.loadSample("data/mp3/slide.mp3", 12);
 
   if (!sample_slide) {
 
@@ -118,7 +127,7 @@ async function loadResources() {
 
   setStatus("defeat.mp3");
 
-  sample_defeat = await Poyo.loadSample("data/mp3/defeat.mp3");
+  sample_defeat = await Poyo.loadSample("data/mp3/defeat.mp3", 1);
 
   if (!sample_defeat) {
 
@@ -127,20 +136,11 @@ async function loadResources() {
 
   setStatus("special.mp3");
 
-  sample_special = await Poyo.loadSample("data/mp3/special.mp3");
+  sample_special = await Poyo.loadSample("data/mp3/special.mp3", 1);
 
   if (!sample_special) {
 
     setStatus("special.mp3", true);
-  }
-
-  setStatus("background.mp3");
-
-  sample_background = await Poyo.loadSample("data/mp3/background.mp3");
-
-  if (!sample_background) {
-
-    setStatus("background.mp3", true);
   }
 
   // Hide the status text.
@@ -341,7 +341,7 @@ function updateHearts() {
     }
 
     // Increase background music as the game progresses. Cap to 4x to appease Firefox.
-    Poyo.adjustSample(getReference(BACKGROUND), master_gain - 0.5, Math.min(4, music_speed), 0, true);
+    Poyo.adjustSample(0, master_gain - 0.5, Math.min(4, music_speed), 0, true);
   }
 }
 
@@ -515,7 +515,7 @@ function reset() {
   goals_met = 0;
 
   // Play background music.
-  Poyo.playSample(sample_background, master_gain - 0.5, 1, 0, true, getReference(BACKGROUND));
+  Poyo.playSample(sample_background, master_gain - 0.5, 1, 0, true);
 }
 
 function renderText() {

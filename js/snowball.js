@@ -43,7 +43,7 @@ Snowball = new class {
 
       let pan = (this.x / CANVAS_W - 0.5) * 2;
 
-      Poyo.playSample(sample_whoosh, master_gain, 1, pan, false, getReference(WHOOSH));
+      Poyo.playSample(sample_whoosh, master_gain, 1, pan, false);
     }
 
     if (!this.show) {
@@ -77,7 +77,7 @@ Snowball = new class {
 
         let pan = (this.x / CANVAS_W - 0.5) * 2;
 
-        Poyo.playSample(sample_pop, master_gain, 1, pan, false, getReference(POP));
+        Poyo.playSample(sample_pop, master_gain, 1, pan, false);
 
         this.show = false;
 
