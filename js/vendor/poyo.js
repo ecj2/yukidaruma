@@ -514,23 +514,23 @@ let Poyo = new class {
       case "wheel":
 
         this.mouse.z = event.deltaY < 0 ? 1 : -1;
-        break;
+      break;
 
       case "mouseup":
 
         this.mouse.down[event.button] = false;
         this.mouse.released[event.button] = true;
-        break;
+      break;
 
       case "mouseout":
 
         this.mouse.focused = false;
-        break;
+      break;
 
       case "mouseover":
 
         this.mouse.focused = true;
-        break;
+      break;
 
       case "mousedown":
 
@@ -540,7 +540,7 @@ let Poyo = new class {
         }
 
         this.mouse.down[event.button] = true;
-        break;
+      break;
 
       case "mousemove":
 
@@ -554,7 +554,7 @@ let Poyo = new class {
           this.mouse.x = event.offsetX;
           this.mouse.y = event.offsetY;
         }
-        break;
+      break;
     }
 
     event.preventDefault();
@@ -705,7 +705,7 @@ let Poyo = new class {
 
         this.keyboard.down[event.which] = false;
         this.keyboard.released[event.which] = true;
-        break;
+      break;
 
       case "keydown":
 
@@ -718,7 +718,7 @@ let Poyo = new class {
 
         this.keyboard.key = event.key;
         this.keyboard.code = event.which;
-        break;
+      break;
     }
 
     if (event.which === 32 || event.which === 38 || event.which === 40 || event.which === 37 || event.which === 39) {
@@ -977,7 +977,7 @@ let Poyo = new class {
 
   createColor(r, g, b, a = 255) {
 
-    return { r: r, g: g, b: b, a: a };
+    return {r: r, g: g, b: b, a: a};
   }
 
   loadFont(path, style = this.STYLE_NORMAL) {
@@ -1128,12 +1128,12 @@ let Poyo = new class {
           case this.ALIGN_CENTER:
 
             this.translateTransform(this.matrix, -lines[i].length / 2 * bitmap_font.grid_width * size, 0);
-            break;
+          break;
 
           case this.ALIGN_RIGHT:
 
             this.translateTransform(this.matrix, -lines[i].length * bitmap_font.grid_width * size, 0);
-            break;
+          break;
         }
 
         this.translateTransform(this.matrix, draw_x, draw_y);
@@ -1532,40 +1532,40 @@ let Poyo = new class {
           case this.MIN_LINEAR:
 
             this.texture_filtering.minification = this.WebGL2.LINEAR;
-            break;
+          break;
 
           case this.MAG_LINEAR:
 
             this.texture_filtering.magnification = this.WebGL2.LINEAR;
-            break;
+          break;
 
           case this.MIN_NEAREST:
 
             this.texture_filtering.minification = this.WebGL2.NEAREST;
-            break;
+          break;
 
           case this.MAG_NEAREST:
 
             this.texture_filtering.magnification = this.WebGL2.NEAREST;
-            break;
+          break;
 
           case this.WRAP_CLAMP:
 
             this.texture_wrap_s = this.WebGL2.CLAMP_TO_EDGE;
             this.texture_wrap_t = this.WebGL2.CLAMP_TO_EDGE;
-            break;
+          break;
 
           case this.WRAP_REPEAT:
 
             this.texture_wrap_s = this.WebGL2.REPEAT;
             this.texture_wrap_t = this.WebGL2.REPEAT;
-            break;
+          break;
 
           case this.WRAP_MIRROR:
 
             this.texture_wrap_s = this.WebGL2.MIRRORED_REPEAT;
             this.texture_wrap_t = this.WebGL2.MIRRORED_REPEAT;
-            break;
+          break;
         }
       }
     );
@@ -1668,7 +1668,7 @@ let Poyo = new class {
     let t = tint;
     let c = this.cache.tint;
 
-    if (c[0] != t.r || c[1] != t.g || c[2] != t.b || c[3] != t.a) {
+    if (c[0] != t.r || c[1] != t.g || c[2] != t.b || c[3] != t.a)  {
 
       // Upload the tint.
       this.WebGL2.uniform4fv(this.uniforms.u_tint, [tint.r / 255, tint.g / 255, tint.b / 255, tint.a / 255]);
