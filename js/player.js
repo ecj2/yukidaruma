@@ -104,39 +104,38 @@ Player = new class {
 
     for (const Platform of Platforms) {
 
-      if (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
+      if (this.spawned && isColliding(this.x, 0, Platform.getX(), 0)) {
 
         if (Platform.isBroken()) {
 
-          // Player tried to cross a broken platform.
+          if (this.facing_direction === FACING_LEFT) {
 
-          this.vel_y = 0;
+            let player_left = this.x;
+            let platform_right = Platform.getX() + TILE_SIZE;
 
-          switch (this.facing_direction) {
+            let distance = platform_right - player_left;
 
-            case FACING_LEFT:
-
-              while (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
-
-                ++this.x;
-              }
-            break;
-
-            case FACING_RIGHT:
-
-              while (isColliding(this.x, this.y + 1, Platform.getX(), 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, CANVAS_H)) {
-
-                --this.x;
-              }
-            break;
+            this.x += distance;
           }
+          else {
+
+            let player_right = this.x + TILE_SIZE;
+            let platform_left = Platform.getX();
+
+            let distance = player_right - platform_left;
+
+            this.x -= distance;
+          }
+
+          // Collision already detected; skip checking against other platforms.
+          break;
         }
       }
     }
 
     if (this.x < 0 || this.x + TILE_SIZE > CANVAS_W) {
 
-      // If the buggy collision sends the player out of view, kill him.
+      // If the buggy collision sends the player out of view, kill him. Does this ever occur?
       this.defeat();
     }
   }
