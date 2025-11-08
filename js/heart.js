@@ -58,6 +58,8 @@ class Heart {
     this.next = 0;
 
     this.scale = 1.0;
+
+    this.time_initialized = Poyo.getTime();
   }
 
   update() {
@@ -78,7 +80,7 @@ class Heart {
     }
 
     // Scale the heart as though it were pulsating.
-    this.scale = 1 + Math.cos(Poyo.getTime() * 3) / 5;
+    this.scale = 1 + Math.cos(this.time_initialized + Poyo.getTime() * 3) / 5;
 
     if (getDistance(this.x, this.y, Player.getX(), Player.getY()) < TILE_SIZE - (TILE_SIZE / 8)) {
 
